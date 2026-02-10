@@ -64,17 +64,22 @@ button{
 .modal-box{
     background:linear-gradient(135deg,#6b0f0f,#3b0606);
     padding:25px;border-radius:20px;text-align:center;
+    animation:zoom .4s
 }
+@keyframes zoom{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
 .modal input{width:100%;padding:10px;border-radius:10px;border:none;margin-top:10px}
 .reward{font-size:24px;color:#f1d98b}
+#fireworks{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1}
 </style>
 </head>
 
 <body>
+<canvas id="fireworks"></canvas>
 <h1>🧧 NHẬN BAO LÌ XÌ MAY MẮN 🧧</h1>
 
 <div class="app">
     <div class="top-bar">
+        <button>Xáo bao lì xì</button>
         <div>Bao còn lại: <span id="count">0</span></div>
     </div>
 
@@ -96,7 +101,8 @@ button{
 </div>
 
 <script>
-const supabase = window.supabase.createClient(
+/* ===== SUPABASE ===== */
+const sb = supabase.createClient(
   "https://emkehtsxkoyagcfybhxe.supabase.co",
   "sb_publishable_tB-Hc05ecsVdJmDSjPOm6A_TOMZPMhl"
 );
@@ -104,9 +110,12 @@ const supabase = window.supabase.createClient(
 let envelopes = [];
 let selectedBox = null;
 
-/* ===== LOAD BAO CHƯA MỞ ===== */
+/* ===== CHECK ĐÃ MỞ CHƯA ===== */
+const alreadyOpened = localStorage.getItem("lixi_opened") === "true";
+
+/* ===== LOAD BAO ===== */
 async function loadBoxes(){
-    const { data } = await supabase
+    const { data } = await sb
         .from("lixi_boxes")
         .select("*")
         .eq("opened", false);
@@ -117,7 +126,7 @@ async function loadBoxes(){
 
 /* ===== LOAD LỊCH SỬ ===== */
 async function loadHistory(){
-    const { data } = await supabase
+    const { data } = await sb
         .from("lixi_boxes")
         .select("opened_by,amount,opened_at")
         .eq("opened", true)
@@ -140,24 +149,38 @@ function render(){
     wrap.innerHTML = "";
 
     envelopes.forEach(box=>{
-        const div=document.createElement("div");
-        div.className="envelope";
-        div.innerHTML=`
+        const div = document.createElement("div");
+        div.className = "envelope";
+
+        if(alreadyOpened){
+            div.style.opacity = 0.4;
+            div.style.pointerEvents = "none";
+        }
+
+        div.innerHTML = `
             <div class="lixi-text small">Chúc bạn</div>
-            <div class="lixi-text big">MAY MẮN</div>`;
-        div.onclick=()=>openEnvelope(box,div);
+            <div class="lixi-text big">MAY MẮN</div>
+        `;
+
+        div.onclick = ()=>openEnvelope(box,div);
         wrap.appendChild(div);
     });
 
-    document.getElementById("count").innerText=envelopes.length;
+    document.getElementById("count").innerText = envelopes.length;
 }
 
 /* ===== MỞ BAO ===== */
 function openEnvelope(box,el){
-    selectedBox=box;
+    if(localStorage.getItem("lixi_opened")==="true"){
+        alert("Bạn đã mở 1 bao rồi!");
+        return;
+    }
+
+    selectedBox = box;
     el.classList.add("opened");
+
     setTimeout(()=>{
-        document.getElementById("rewardText").innerText=
+        document.getElementById("rewardText").innerText =
             `🎉 Bạn nhận được ${box.amount.toLocaleString()}đ`;
         document.getElementById("modal").classList.add("show");
     },400);
@@ -165,15 +188,17 @@ function openEnvelope(box,el){
 
 /* ===== XÁC NHẬN ===== */
 async function confirmOpen(){
-    const name=document.getElementById("nameInput").value || "Ẩn danh";
+    const name = document.getElementById("nameInput").value || "Ẩn danh";
 
-    await supabase.from("lixi_boxes")
+    await sb.from("lixi_boxes")
         .update({
             opened:true,
             opened_by:name,
             opened_at:new Date()
         })
         .eq("id",selectedBox.id);
+
+    localStorage.setItem("lixi_opened","true");
 
     document.getElementById("modal").classList.remove("show");
     document.getElementById("nameInput").value="";
@@ -182,9 +207,22 @@ async function confirmOpen(){
     loadHistory();
 }
 
+/* ===== REALTIME ===== */
+sb.channel("lixi-realtime")
+  .on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "lixi_boxes" },
+    () => {
+        loadBoxes();
+        loadHistory();
+    }
+  )
+  .subscribe();
+
 /* INIT */
 loadBoxes();
 loadHistory();
 </script>
+
 </body>
 </html>
