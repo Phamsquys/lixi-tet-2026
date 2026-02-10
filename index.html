@@ -222,7 +222,33 @@ sb.channel("lixi-realtime")
 /* INIT */
 loadBoxes();
 loadHistory();
+
+async function adminResetServer(){
+    const pass = prompt("Nhập mật khẩu admin:");
+    if(pass !== "admin2026"){
+        alert("Sai mật khẩu");
+        return;
+    }
+
+    const { error } = await sb
+        .from("lixi_boxes")
+        .update({
+            opened: false,
+            opened_by: null,
+            opened_at: null
+        });
+
+    if(error){
+        console.error(error);
+        alert("Reset thất bại");
+        return;
+    }
+
+    alert("🎉 Đã reset toàn bộ bao lì xì!");
+    location.reload();
+}
 </script>
 
 </body>
 </html>
+
