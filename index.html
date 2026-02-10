@@ -8,7 +8,6 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
 <style>
-/* ====== GIỮ NGUYÊN CSS ÔNG ====== */
 body{
     margin:0;
     background:linear-gradient(180deg,#7a0000,#3a0a0a);
@@ -80,7 +79,7 @@ button{
 
 <div class="app">
     <div class="top-bar">
-        <button id="shuffleBtn">Xáo bao lì xì</button>
+        <button>Xáo bao lì xì</button>
         <div>Bao còn lại: <span id="count">0</span></div>
     </div>
 
@@ -103,20 +102,25 @@ button{
 
 <script>
 /* ===== SUPABASE ===== */
-const supabase = supabase.createClient(
-  "https://emkehtsxkoyagcfybhxe.supabase.co",   // 👈 URL
-  "sb_publishable_tB-Hc05ecsVdJmDSjPOm6A_TOMZPMhl"                  // 👈 KEY
+const sb = supabase.createClient(
+  "https://emkehtsxkoyagcfybhxe.supabase.co",
+  "sb_publishable_tB-Hc05ecsVdJmDSjPOm6A_TOMZPMhl"
 );
 
 let envelopes = [];
 let selectedBox = null;
 
-/* ===== LOAD BAO TỪ DATABASE ===== */
+/* ===== LOAD BAO ===== */
 async function loadBoxes(){
-    const {data} = await supabase
+    const { data, error } = await sb
         .from("lixi_boxes")
         .select("*")
-        .eq("opened",false);
+        .eq("opened", false);
+
+    if(error){
+        console.error(error);
+        return;
+    }
 
     envelopes = data;
     render();
@@ -153,12 +157,16 @@ function openEnvelope(box,el){
     },400);
 }
 
-/* ===== XÁC NHẬN + KHÓA DB ===== */
+/* ===== XÁC NHẬN ===== */
 async function confirmOpen(){
     const name = document.getElementById("nameInput").value || "Ẩn danh";
 
-    await supabase.from("lixi_boxes")
-        .update({opened:true,opened_by:name,opened_at:new Date()})
+    await sb.from("lixi_boxes")
+        .update({
+            opened:true,
+            opened_by:name,
+            opened_at:new Date()
+        })
         .eq("id",selectedBox.id);
 
     document.getElementById("modal").classList.remove("show");
