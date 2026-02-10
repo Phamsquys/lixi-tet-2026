@@ -86,7 +86,7 @@ button{
     <div class="main">
         <div class="envelopes" id="envelopes"></div>
         <div class="history">
-            <h3>Những người đã mở</h3>
+            <h3>Những người  đã mở</h3>
             <div id="historyList"></div>
         </div>
     </div>
@@ -110,7 +110,7 @@ const sb = supabase.createClient(
 let envelopes = [];
 let selectedBox = null;
 
-/* ===== CHECK ĐÃ MỞ CHƯA ===== */
+/* ===== CHECK  IGÃ MỞ CHƯA ===== */
 const alreadyOpened = localStorage.getItem("lixi_opened") === "true";
 
 /* ===== LOAD BAO ===== */
@@ -138,7 +138,7 @@ async function loadHistory(){
     data?.forEach(i=>{
         const div=document.createElement("div");
         div.className="history-item";
-        div.innerHTML=`<b>${i.opened_by}</b> nhận ${i.amount.toLocaleString()}đ`;
+        div.innerHTML=`<b>${i.opened_by}</b> nhận ${i.amount.toLocaleString()} IG`;
         list.appendChild(div);
     });
 }
@@ -172,7 +172,7 @@ function render(){
 /* ===== MỞ BAO ===== */
 function openEnvelope(box,el){
     if(localStorage.getItem("lixi_opened")==="true"){
-        alert("Bạn đã mở 1 bao rồi!");
+        alert("Bạn  IGã mở 1 bao rồi!");
         return;
     }
 
@@ -181,7 +181,7 @@ function openEnvelope(box,el){
 
     setTimeout(()=>{
         document.getElementById("rewardText").innerText =
-            `🎉 Bạn nhận được ${box.amount.toLocaleString()}đ`;
+            `🎉 Bạn nhận  IGược ${box.amount.toLocaleString()} IG`;
         document.getElementById("modal").classList.add("show");
     },400);
 }
@@ -244,11 +244,12 @@ async function adminResetServer(){
         return;
     }
 
-    alert("🎉 Đã reset toàn bộ bao lì xì!");
+    alert("🎉  IGã reset toàn bộ bao lì xì!");
     location.reload();
 }
 </script>
 
 </body>
 </html>
+
 
