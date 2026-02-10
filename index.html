@@ -64,22 +64,17 @@ button{
 .modal-box{
     background:linear-gradient(135deg,#6b0f0f,#3b0606);
     padding:25px;border-radius:20px;text-align:center;
-    animation:zoom .4s
 }
-@keyframes zoom{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
 .modal input{width:100%;padding:10px;border-radius:10px;border:none;margin-top:10px}
 .reward{font-size:24px;color:#f1d98b}
-#fireworks{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1}
 </style>
 </head>
 
 <body>
-<canvas id="fireworks"></canvas>
 <h1>🧧 NHẬN BAO LÌ XÌ MAY MẮN 🧧</h1>
 
 <div class="app">
     <div class="top-bar">
-        <button>Xáo bao lì xì</button>
         <div>Bao còn lại: <span id="count">0</span></div>
     </div>
 
@@ -101,8 +96,7 @@ button{
 </div>
 
 <script>
-/* ===== SUPABASE ===== */
-const sb = supabase.createClient(
+const supabase = window.supabase.createClient(
   "https://emkehtsxkoyagcfybhxe.supabase.co",
   "sb_publishable_tB-Hc05ecsVdJmDSjPOm6A_TOMZPMhl"
 );
@@ -110,22 +104,35 @@ const sb = supabase.createClient(
 let envelopes = [];
 let selectedBox = null;
 
-/* ===== LOAD BAO ===== */
+/* ===== LOAD BAO CHƯA MỞ ===== */
 async function loadBoxes(){
-    const { data, error } = await sb
+    const { data } = await supabase
         .from("lixi_boxes")
         .select("*")
         .eq("opened", false);
 
-    if(error){
-        console.error(error);
-        return;
-    }
-
-    envelopes = data;
+    envelopes = data || [];
     render();
 }
-loadBoxes();
+
+/* ===== LOAD LỊCH SỬ ===== */
+async function loadHistory(){
+    const { data } = await supabase
+        .from("lixi_boxes")
+        .select("opened_by,amount,opened_at")
+        .eq("opened", true)
+        .order("opened_at",{ascending:false});
+
+    const list = document.getElementById("historyList");
+    list.innerHTML = "";
+
+    data?.forEach(i=>{
+        const div=document.createElement("div");
+        div.className="history-item";
+        div.innerHTML=`<b>${i.opened_by}</b> nhận ${i.amount.toLocaleString()}đ`;
+        list.appendChild(div);
+    });
+}
 
 /* ===== RENDER ===== */
 function render(){
@@ -133,25 +140,24 @@ function render(){
     wrap.innerHTML = "";
 
     envelopes.forEach(box=>{
-        const div = document.createElement("div");
-        div.className = "envelope";
-        div.innerHTML = `
+        const div=document.createElement("div");
+        div.className="envelope";
+        div.innerHTML=`
             <div class="lixi-text small">Chúc bạn</div>
             <div class="lixi-text big">MAY MẮN</div>`;
-        div.onclick = ()=>openEnvelope(box,div);
+        div.onclick=()=>openEnvelope(box,div);
         wrap.appendChild(div);
     });
 
-    document.getElementById("count").innerText = envelopes.length;
+    document.getElementById("count").innerText=envelopes.length;
 }
 
 /* ===== MỞ BAO ===== */
 function openEnvelope(box,el){
-    selectedBox = box;
+    selectedBox=box;
     el.classList.add("opened");
-
     setTimeout(()=>{
-        document.getElementById("rewardText").innerText =
+        document.getElementById("rewardText").innerText=
             `🎉 Bạn nhận được ${box.amount.toLocaleString()}đ`;
         document.getElementById("modal").classList.add("show");
     },400);
@@ -159,9 +165,9 @@ function openEnvelope(box,el){
 
 /* ===== XÁC NHẬN ===== */
 async function confirmOpen(){
-    const name = document.getElementById("nameInput").value || "Ẩn danh";
+    const name=document.getElementById("nameInput").value || "Ẩn danh";
 
-    await sb.from("lixi_boxes")
+    await supabase.from("lixi_boxes")
         .update({
             opened:true,
             opened_by:name,
@@ -170,38 +176,15 @@ async function confirmOpen(){
         .eq("id",selectedBox.id);
 
     document.getElementById("modal").classList.remove("show");
-    document.getElementById("nameInput").value = "";
-
-    const h = document.createElement("div");
-    h.className="history-item";
-    h.innerHTML=`<b>${name}</b> nhận ${selectedBox.amount.toLocaleString()}đ`;
-    document.getElementById("historyList").prepend(h);
+    document.getElementById("nameInput").value="";
 
     loadBoxes();
+    loadHistory();
 }
 
-/* ===== PHÁO HOA ===== */
-const canvas=document.getElementById("fireworks"),ctx=canvas.getContext("2d");
-function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
-resize();addEventListener("resize",resize);
-let ps=[];
-setInterval(()=>{
-    let x=Math.random()*canvas.width,y=Math.random()*canvas.height*.4;
-    for(let i=0;i<40;i++)
-        ps.push({x,y,vx:Math.cos(i)*3,vy:Math.sin(i)*3,a:1})
-},900);
-(function anim(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ps.forEach((p,i)=>{
-        p.x+=p.vx;p.y+=p.vy;p.a-=.015;
-        ctx.globalAlpha=p.a;
-        ctx.fillStyle="#ffd966";
-        ctx.beginPath();ctx.arc(p.x,p.y,2,0,7);ctx.fill();
-        if(p.a<=0)ps.splice(i,1)
-    });
-    ctx.globalAlpha=1;
-    requestAnimationFrame(anim)
-})();
+/* INIT */
+loadBoxes();
+loadHistory();
 </script>
 </body>
 </html>
