@@ -8,6 +8,24 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
 <style>
+    .envelope{
+    height:150px;
+    border-radius:12px;
+    background:linear-gradient(135deg,#753939,#b30000);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    cursor:pointer;
+    box-shadow:0 8px 15px rgba(0,0,0,.4);
+    transition:transform .6s;
+    transform-style: preserve-3d;
+}
+
+.envelope.flip{
+    transform: rotateY(180deg);
+}
+
 body{
     margin:0;
     background:linear-gradient(180deg,#7a0000,#3a0a0a);
@@ -79,7 +97,7 @@ button{
 
 <div class="app">
     <div class="top-bar">
-        <button>Xáo bao lì xì</button>
+      <button onclick="shuffleBoxes()">Xáo bao lì xì</button>
         <div>Bao còn lại: <span id="count">0</span></div>
     </div>
 
@@ -101,7 +119,7 @@ button{
 </div>
 
 <script>
-/* ===== SUPABASE ===== */
+
 const sb = supabase.createClient(
   "https://emkehtsxkoyagcfybhxe.supabase.co",
   "sb_publishable_tB-Hc05ecsVdJmDSjPOm6A_TOMZPMhl"
@@ -110,10 +128,8 @@ const sb = supabase.createClient(
 let envelopes = [];
 let selectedBox = null;
 
-/* ===== CHECK  IGÃ MỞ CHƯA ===== */
 const alreadyOpened = localStorage.getItem("lixi_opened") === "true";
 
-/* ===== LOAD BAO ===== */
 async function loadBoxes(){
     const { data } = await sb
         .from("lixi_boxes")
@@ -124,7 +140,6 @@ async function loadBoxes(){
     render();
 }
 
-/* ===== LOAD LỊCH SỬ ===== */
 async function loadHistory(){
     const { data } = await sb
         .from("lixi_boxes")
@@ -143,7 +158,6 @@ async function loadHistory(){
     });
 }
 
-/* ===== RENDER ===== */
 function render(){
     const wrap = document.getElementById("envelopes");
     wrap.innerHTML = "";
@@ -169,10 +183,9 @@ function render(){
     document.getElementById("count").innerText = envelopes.length;
 }
 
-/* ===== MỞ BAO ===== */
 function openEnvelope(box,el){
     if(localStorage.getItem("lixi_opened")==="true"){
-        alert("Bạn  IGã mở 1 bao rồi!");
+        alert("Bạn  đã mở 1 bao rồi!");
         return;
     }
 
@@ -186,7 +199,6 @@ function openEnvelope(box,el){
     },400);
 }
 
-/* ===== XÁC NHẬN ===== */
 async function confirmOpen(){
     const name = document.getElementById("nameInput").value || "Ẩn danh";
 
@@ -207,7 +219,6 @@ async function confirmOpen(){
     loadHistory();
 }
 
-/* ===== REALTIME ===== */
 sb.channel("lixi-realtime")
   .on(
     "postgres_changes",
@@ -219,38 +230,39 @@ sb.channel("lixi-realtime")
   )
   .subscribe();
 
-/* INIT */
 loadBoxes();
 loadHistory();
 
-async function adminResetServer(){
-    const pass = prompt("Nhập mật khẩu admin:");
-    if(pass !== "admin2026"){
-        alert("Sai mật khẩu");
+function shuffleBoxes(){
+
+    if(localStorage.getItem("lixi_opened")==="true"){
+        alert("Bạn đã mở 1 bao rồi, không thể xáo nữa!");
         return;
     }
 
-    const { error } = await sb
-        .from("lixi_boxes")
-        .update({
-            opened: false,
-            opened_by: null,
-            opened_at: null
-        });
+    const all = document.querySelectorAll(".envelope");
 
-    if(error){
-        console.error(error);
-        alert("Reset thất bại");
-        return;
-    }
+    all.forEach(el => el.classList.add("flip"));
 
-    alert("🎉  IGã reset toàn bộ bao lì xì!");
-    location.reload();
+    setTimeout(()=>{
+
+        envelopes.sort(()=>Math.random()-0.5);
+
+        render();
+
+        setTimeout(()=>{
+            document.querySelectorAll(".envelope")
+                .forEach(el=>el.classList.remove("flip"));
+        },100);
+
+    },600);
 }
+
 </script>
 
 </body>
 </html>
+
 
 
 
